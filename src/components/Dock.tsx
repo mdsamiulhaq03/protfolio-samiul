@@ -23,7 +23,42 @@ const Dock = () => {
   const { openWindow, closeWindow, windows } = useWindowStore();
   const dockRef = useRef<HTMLDivElement | null>(null);
 
-  /* ----------------------------- ANIMATION ----------------------------- */
+  const animateIn = (icons: HTMLButtonElement[], hoveredIndex: number) => {
+    icons.forEach((icon, i) => {
+      const distance = Math.abs(i - hoveredIndex);
+
+      const config =
+        distance === 0
+          ? { scale: SCALE_PEAK, y: Y_PEAK }
+          : distance === 1
+            ? { scale: SCALE_NEAR, y: Y_NEAR }
+            : distance === 2
+              ? { scale: SCALE_FAR, y: Y_FAR }
+              : { scale: 1, y: 0 };
+
+      gsap.killTweensOf(icon);
+
+      gsap.to(icon, {
+        ...config,
+        duration: 0.2,
+        ease: "power3.out",
+        transformOrigin: "bottom center",
+      });
+    });
+  };
+
+  const animateOut = (icons: HTMLButtonElement[]) => {
+    icons.forEach((icon) => {
+      gsap.killTweensOf(icon);
+
+      gsap.to(icon, {
+        scale: 1,
+        y: 0,
+        duration: 0.35,
+        ease: "power3.out",
+      });
+    });
+  };
 
   useGSAP(
     () => {
@@ -34,76 +69,16 @@ const Dock = () => {
         dock.querySelectorAll<HTMLButtonElement>(".dock-icon"),
       );
 
-      const animateIn = (hoveredIndex: number) => {
-        icons.forEach((icon, i) => {
-          const distance = Math.abs(i - hoveredIndex);
+      const handleLeave = () => animateOut(icons);
 
-          let scale = 1;
-          let y = 0;
-
-          if (distance === 0) {
-            scale = SCALE_PEAK;
-            y = Y_PEAK;
-          } else if (distance === 1) {
-            scale = SCALE_NEAR;
-            y = Y_NEAR;
-          } else if (distance === 2) {
-            scale = SCALE_FAR;
-            y = Y_FAR;
-          }
-
-          gsap.to(icon, {
-            scale,
-            y,
-            duration: 0.2,
-            ease: "power3.out",
-            transformOrigin: "bottom center",
-            overwrite: true,
-          });
-        });
-      };
-
-      const animateOut = () => {
-        icons.forEach((icon) => {
-          gsap.to(icon, {
-            scale: 1,
-            y: 0,
-            duration: 0.35,
-            ease: "power3.out",
-            overwrite: true,
-          });
-        });
-      };
-
-      const handlers: { el: Element; enter: () => void; leave: () => void }[] =
-        [];
-
-      icons.forEach((icon, index) => {
-        const enter = () => animateIn(index);
-        const leave = () => animateOut();
-
-        icon.addEventListener("mouseenter", enter);
-        icon.addEventListener("mouseleave", leave);
-
-        handlers.push({ el: icon, enter, leave });
-      });
-
-      // Extra fix — reset when mouse fully exits dock
-      dock.addEventListener("mouseleave", animateOut);
+      dock.addEventListener("mouseleave", handleLeave);
 
       return () => {
-        handlers.forEach(({ el, enter, leave }) => {
-          el.removeEventListener("mouseenter", enter);
-          el.removeEventListener("mouseleave", leave);
-        });
-
-        dock.removeEventListener("mouseleave", animateOut);
+        dock.removeEventListener("mouseleave", handleLeave);
       };
     },
     { scope: dockRef },
   );
-
-  /* ----------------------------- LOGIC ----------------------------- */
 
   const toggleApp = (app: DockApp) => {
     if (!app.canOpen) return;
@@ -113,30 +88,45 @@ const Dock = () => {
     win.isOpen ? closeWindow(app.id) : openWindow(app.id);
   };
 
-  /* ----------------------------- UI ----------------------------- */
-
   return (
     <section id="dock">
       <div
         ref={dockRef}
         className="dock-container flex items-end justify-center gap-4 px-4 py-3"
       >
-        {dockApps.map((app) => (
+        {dockApps.map((app, index) => (
           <div key={app.id} className="relative flex justify-center">
             <button
-              type="button"
               className="dock-icon transition-transform"
               aria-label={app.name}
               data-tooltip-id="dock-tooltip"
               data-tooltip-content={app.name}
               disabled={!app.canOpen}
+              onMouseEnter={() =>
+                animateIn(
+                  Array.from(
+                    dockRef.current?.querySelectorAll<HTMLButtonElement>(
+                      ".dock-icon",
+                    ) || [],
+                  ),
+                  index,
+                )
+              }
+              onMouseLeave={() =>
+                animateOut(
+                  Array.from(
+                    dockRef.current?.querySelectorAll<HTMLButtonElement>(
+                      ".dock-icon",
+                    ) || [],
+                  ),
+                )
+              }
               onClick={() => toggleApp(app)}
               style={{ transformOrigin: "bottom center" }}
             >
               <img
                 src={`/images/${app.icon}`}
                 alt={app.name}
-                loading="lazy"
                 className={app.canOpen ? "" : "opacity-50"}
               />
             </button>

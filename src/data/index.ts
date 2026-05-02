@@ -81,12 +81,50 @@ export type TechStack = {
 };
 
 export const techStack: TechStack[] = [
-  { category: "Frontend", items: ["React.js", "Next.js", "TypeScript"] },
-  { category: "Mobile", items: ["React Native", "Expo"] },
-  { category: "Styling", items: ["Tailwind CSS", "Sass", "CSS"] },
-  { category: "Backend", items: ["Node.js", "Express", "NestJS", "Hono"] },
-  { category: "Database", items: ["MongoDB", "PostgreSQL"] },
-  { category: "Dev Tools", items: ["Git", "GitHub", "Docker"] },
+  {
+    category: "Programming Languages",
+    items: ["HTML5", "CSS3", "JavaScript", "Python"],
+  },
+  {
+    category: "Backend Development",
+    items: ["Node.js", "Express.js"],
+  },
+  {
+    category: "Authentication",
+    items: ["JWT", "bcrypt"],
+  },
+  {
+    category: "Tools & Platforms",
+    items: ["Git", "GitHub", "VS Code", "Postman", "Jupyter Notebook", "Figma"],
+  },
+  {
+    category: "Operating Systems",
+    items: ["Windows", "Linux", "Android"],
+  },
+  {
+    category: "Machine Learning & Deep Learning",
+    items: ["PyTorch", "TensorFlow", "Keras", "Scikit-learn"],
+  },
+  {
+    category: "Data Analysis & Visualization",
+    items: ["Pandas", "NumPy"],
+  },
+  {
+    category: "Frontend Development",
+    items: ["React.js", "Tailwind CSS", "Bootstrap", "Responsive Web Design"],
+  },
+  {
+    category: "Databases",
+    items: ["MySQL", "MongoDB", "Firebase Firestore", "SQLite"],
+  },
+  {
+    category: "Cloud & Deployment",
+    items: ["Vercel", "GitHub Pages"],
+  },
+  {
+    category: "Professional Skills",
+    items: ["Problem Solving", "Team Collaboration"],
+  },
 ];
 
 // ================= SOCIALS =================
