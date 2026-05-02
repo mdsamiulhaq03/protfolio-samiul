@@ -43,57 +43,48 @@ const setupLiquidTypography = (
 
   const { min, max, default: base } = FONT_WEIGHT[type];
 
-  // 🧲 inertia cursor (lagged pointer)
-  let mouse = { x: 0, y: 0 };
-  let smooth = { x: 0, y: 0 };
+  let mouseX = 0;
+  let mouseY = 0;
+
+  let smoothX = 0;
+  let smoothY = 0;
 
   let raf: number | null = null;
 
-  const rect = () => container.getBoundingClientRect();
-
   const animate = () => {
-    const r = rect();
+    const rect = container.getBoundingClientRect();
 
-    // 🌊 inertia smoothing (liquid feel)
-    smooth.x += (mouse.x - smooth.x) * 0.08;
-    smooth.y += (mouse.y - smooth.y) * 0.08;
+    // smooth inertia cursor
+    smoothX += (mouseX - smoothX) * 0.08;
+    smoothY += (mouseY - smoothY) * 0.08;
 
-    letters.forEach((letter, i) => {
+    letters.forEach((letter) => {
       const lRect = letter.getBoundingClientRect();
 
-      const x = lRect.left - r.left + lRect.width / 2;
-      const y = lRect.top - r.top + lRect.height / 2;
+      const x = lRect.left - rect.left + lRect.width / 2;
+      const y = lRect.top - rect.top + lRect.height / 2;
 
-      const dx = smooth.x - x;
-      const dy = smooth.y - y;
+      const dx = smoothX - x;
+      const dy = smoothY - y;
 
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // 🌊 wave distortion (liquid feel)
-      const wave = Math.sin(dist * 0.04 - i * 0.2) * 8;
-
-      // 🧲 magnetic falloff
       const influence = Math.exp(-dist / 160);
 
       const weight = base + (max - min) * influence;
 
-      const moveX = dx * influence * 0.35;
-      const moveY = dy * influence * 0.35 + wave;
-
-      const rotateX = dy * 0.15 * influence;
-      const rotateY = dx * 0.15 * influence;
-
-      const depth = influence * 120;
+      const wave = Math.sin(dist * 0.04) * 6;
 
       gsap.to(letter, {
-        x: moveX,
-        y: moveY,
-        rotateX,
-        rotateY,
-        z: depth,
+        x: dx * influence * 0.35,
+        y: dy * influence * 0.35 + wave,
+        rotateX: dy * 0.15 * influence,
+        rotateY: dx * 0.15 * influence,
+        z: influence * 120,
         fontVariationSettings: `"wght" ${weight}`,
-        duration: 0.6,
+        duration: 0.5,
         ease: "power3.out",
+        overwrite: "auto",
       });
     });
 
@@ -101,9 +92,10 @@ const setupLiquidTypography = (
   };
 
   const onMove = (e: MouseEvent) => {
-    const r = rect();
-    mouse.x = e.clientX - r.left;
-    mouse.y = e.clientY - r.top;
+    const rect = container.getBoundingClientRect();
+
+    mouseX = e.clientX - rect.left;
+    mouseY = e.clientY - rect.top;
 
     if (!raf) raf = requestAnimationFrame(animate);
   };
@@ -117,7 +109,7 @@ const setupLiquidTypography = (
         rotateY: 0,
         z: 0,
         fontVariationSettings: `"wght" ${base}`,
-        duration: 0.8,
+        duration: 0.7,
         ease: "power4.out",
       });
     });
