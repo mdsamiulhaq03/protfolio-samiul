@@ -2,14 +2,14 @@ import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { INITIAL_Z_INDEX, WINDOW_CONFIG } from "../data";
 
-/* ----------------------------- TYPES ----------------------------- */
-
 type WindowKey = keyof typeof WINDOW_CONFIG;
 
 export type WindowData = Record<string, unknown> | null;
 
 export type WindowItem = {
   isOpen: boolean;
+  isMinimized: boolean;
+  isMaximized: boolean;
   zIndex: number;
   data: WindowData;
 };
@@ -21,9 +21,10 @@ type WindowState = {
   openWindow: (key: WindowKey, data?: WindowData) => void;
   closeWindow: (key: WindowKey) => void;
   focusWindow: (key: WindowKey) => void;
+  minimizeWindow: (key: WindowKey) => void;
+  maximizeWindow: (key: WindowKey) => void;
+  restoreWindow: (key: WindowKey) => void;
 };
-
-/* ----------------------------- STORE ----------------------------- */
 
 const useWindowStore = create<WindowState>()(
   immer((set) => ({
@@ -37,10 +38,10 @@ const useWindowStore = create<WindowState>()(
         if (!win) return;
 
         win.isOpen = true;
-        win.zIndex = state.nextZIndex;
-        win.data = data ?? win.data;
+        win.isMinimized = false;
 
-        state.nextZIndex += 1;
+        win.zIndex = state.nextZIndex++;
+        win.data = data ?? win.data;
       }),
 
     closeWindow: (key) =>
@@ -49,8 +50,8 @@ const useWindowStore = create<WindowState>()(
         if (!win) return;
 
         win.isOpen = false;
-        win.zIndex = -1;
-        win.data = null;
+        win.isMinimized = false;
+        win.isMaximized = false;
       }),
 
     focusWindow: (key) =>
@@ -59,8 +60,42 @@ const useWindowStore = create<WindowState>()(
         if (!win) return;
 
         win.isOpen = true;
-        win.zIndex = state.nextZIndex;
-        state.nextZIndex += 1;
+        win.isMinimized = false;
+        win.zIndex = state.nextZIndex++;
+      }),
+
+    minimizeWindow: (key) =>
+      set((state) => {
+        const win = state.windows[key];
+        if (!win) return;
+
+        win.isMinimized = true;
+        win.isOpen = false;
+      }),
+
+    maximizeWindow: (key) =>
+      set((state) => {
+        const win = state.windows[key];
+        if (!win) return;
+
+        win.isMaximized = !win.isMaximized;
+
+        win.isOpen = true;
+        win.isMinimized = false;
+
+        win.zIndex = state.nextZIndex++;
+      }),
+
+    restoreWindow: (key) =>
+      set((state) => {
+        const win = state.windows[key];
+        if (!win) return;
+
+        win.isOpen = true;
+        win.isMinimized = false;
+        win.isMaximized = false;
+
+        win.zIndex = state.nextZIndex++;
       }),
   })),
 );

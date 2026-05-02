@@ -3,8 +3,8 @@ import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
 const FONT_WEIGHT = {
-  subtitle: { min: 100, max: 400, default: 100 },
-  title: { min: 400, max: 900, default: 400 },
+  subtitle: { min: 100, max: 400, base: 100 },
+  title: { min: 400, max: 900, base: 400 },
 } as const;
 
 type FontType = keyof typeof FONT_WEIGHT;
@@ -24,7 +24,7 @@ const renderText = (text: string, className: string) => {
   ));
 };
 
-/* ----------------------------- LIQUID ENGINE ----------------------------- */
+/* ----------------------------- ENGINE ----------------------------- */
 
 const setupLiquidTypography = (
   container: HTMLElement | null,
@@ -36,15 +36,18 @@ const setupLiquidTypography = (
     container.querySelectorAll<HTMLSpanElement>("span"),
   );
 
-  const { min, max, default: base } = FONT_WEIGHT[type];
+  const { min, max, base } = FONT_WEIGHT[type];
 
   const animateIn = (hoveredIndex: number) => {
     letters.forEach((letter, i) => {
       const distance = Math.abs(i - hoveredIndex);
       const influence = Math.max(0, 1 - distance * 0.3);
+
       const weight = base + (max - min) * influence;
       const y = -12 * influence;
       const scale = 1 + 0.15 * influence;
+
+      gsap.killTweensOf(letter);
 
       gsap.to(letter, {
         y,
@@ -52,40 +55,38 @@ const setupLiquidTypography = (
         fontVariationSettings: `"wght" ${weight}`,
         duration: 0.25,
         ease: "power3.out",
-        overwrite: "auto",
       });
     });
   };
 
   const animateOut = () => {
     letters.forEach((letter) => {
+      gsap.killTweensOf(letter);
+
       gsap.to(letter, {
         y: 0,
         scale: 1,
         fontVariationSettings: `"wght" ${base}`,
         duration: 0.5,
         ease: "power4.out",
-        overwrite: "auto",
       });
     });
   };
 
-  const handlers: { el: Element; enter: () => void; leave: () => void }[] = [];
+  const handleMouseMove = (e: MouseEvent) => {
+    const rect = container.getBoundingClientRect();
+    const x = e.clientX - rect.left;
 
-  letters.forEach((letter, index) => {
-    const enter = () => animateIn(index);
-    const leave = () => animateOut();
+    const index = Math.floor((x / rect.width) * letters.length);
+    animateIn(Math.max(0, Math.min(index, letters.length - 1)));
+  };
 
-    letter.addEventListener("mouseenter", enter);
-    letter.addEventListener("mouseleave", leave);
-    handlers.push({ el: letter, enter, leave });
-  });
+  container.addEventListener("mousemove", handleMouseMove);
+  container.addEventListener("mouseleave", animateOut);
 
   return () => {
-    handlers.forEach(({ el, enter, leave }) => {
-      el.removeEventListener("mouseenter", enter);
-      el.removeEventListener("mouseleave", leave);
-    });
+    container.removeEventListener("mousemove", handleMouseMove);
+    container.removeEventListener("mouseleave", animateOut);
   };
 };
 
