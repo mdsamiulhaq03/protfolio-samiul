@@ -9,18 +9,13 @@ const FONT_WEIGHT = {
 
 type FontType = keyof typeof FONT_WEIGHT;
 
-const renderTest = (
-  text: string,
-  className: string,
-  baseWeight: number = 500,
-): JSX.Element[] => {
+const renderText = (text: string, className: string) => {
   return [...text].map((char, index) => (
     <span
       key={index}
       className={className}
       style={{
         display: "inline-block",
-        fontVariationSettings: `"wght" ${baseWeight}`,
         willChange: "transform, font-variation-settings",
       }}
     >
@@ -43,96 +38,54 @@ const setupLiquidTypography = (
 
   const { min, max, default: base } = FONT_WEIGHT[type];
 
-  // 🧲 inertia cursor (lagged pointer)
-  let mouse = { x: 0, y: 0 };
-  let smooth = { x: 0, y: 0 };
-
-  let raf: number | null = null;
-
-  const rect = () => container.getBoundingClientRect();
-
-  const animate = () => {
-    const r = rect();
-
-    // 🌊 inertia smoothing (liquid feel)
-    smooth.x += (mouse.x - smooth.x) * 0.08;
-    smooth.y += (mouse.y - smooth.y) * 0.08;
-
+  const animateIn = (hoveredIndex: number) => {
     letters.forEach((letter, i) => {
-      const lRect = letter.getBoundingClientRect();
-
-      const x = lRect.left - r.left + lRect.width / 2;
-      const y = lRect.top - r.top + lRect.height / 2;
-
-      const dx = smooth.x - x;
-      const dy = smooth.y - y;
-
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      // 🌊 wave distortion (liquid feel)
-      const wave = Math.sin(dist * 0.04 - i * 0.2) * 8;
-
-      // 🧲 magnetic falloff
-      const influence = Math.exp(-dist / 160);
-
+      const distance = Math.abs(i - hoveredIndex);
+      const influence = Math.max(0, 1 - distance * 0.3);
       const weight = base + (max - min) * influence;
-
-      const moveX = dx * influence * 0.35;
-      const moveY = dy * influence * 0.35 + wave;
-
-      const rotateX = dy * 0.15 * influence;
-      const rotateY = dx * 0.15 * influence;
-
-      const depth = influence * 120;
+      const y = -12 * influence;
+      const scale = 1 + 0.15 * influence;
 
       gsap.to(letter, {
-        x: moveX,
-        y: moveY,
-        rotateX,
-        rotateY,
-        z: depth,
+        y,
+        scale,
         fontVariationSettings: `"wght" ${weight}`,
-        duration: 0.6,
+        duration: 0.25,
         ease: "power3.out",
+        overwrite: "auto",
       });
     });
-
-    raf = requestAnimationFrame(animate);
   };
 
-  const onMove = (e: MouseEvent) => {
-    const r = rect();
-    mouse.x = e.clientX - r.left;
-    mouse.y = e.clientY - r.top;
-
-    if (!raf) raf = requestAnimationFrame(animate);
-  };
-
-  const reset = () => {
+  const animateOut = () => {
     letters.forEach((letter) => {
       gsap.to(letter, {
-        x: 0,
         y: 0,
-        rotateX: 0,
-        rotateY: 0,
-        z: 0,
+        scale: 1,
         fontVariationSettings: `"wght" ${base}`,
-        duration: 0.8,
+        duration: 0.5,
         ease: "power4.out",
+        overwrite: "auto",
       });
     });
-
-    if (raf) cancelAnimationFrame(raf);
-    raf = null;
   };
 
-  container.addEventListener("mousemove", onMove);
-  container.addEventListener("mouseleave", reset);
+  const handlers: { el: Element; enter: () => void; leave: () => void }[] = [];
+
+  letters.forEach((letter, index) => {
+    const enter = () => animateIn(index);
+    const leave = () => animateOut();
+
+    letter.addEventListener("mouseenter", enter);
+    letter.addEventListener("mouseleave", leave);
+    handlers.push({ el: letter, enter, leave });
+  });
 
   return () => {
-    container.removeEventListener("mousemove", onMove);
-    container.removeEventListener("mouseleave", reset);
-    if (raf) cancelAnimationFrame(raf);
+    handlers.forEach(({ el, enter, leave }) => {
+      el.removeEventListener("mouseenter", enter);
+      el.removeEventListener("mouseleave", leave);
+    });
   };
 };
 
@@ -153,16 +106,13 @@ const Welcome = () => {
   }, []);
 
   return (
-    <section
-      id="welcome"
-      className="perspective-[1200px] overflow-hidden select-none"
-    >
+    <section id="welcome" className="overflow-hidden select-none">
       <p ref={titleRef}>
-        {renderTest("Hey I'm Samiul Haque", "text-4xl font-georama", 100)}
+        {renderText("Hey I'm Samiul Haque", "text-4xl font-georama")}
       </p>
 
       <h1 ref={subtitleRef} className="mt-10">
-        {renderTest("Portfolio", "text-9xl font-georama")}
+        {renderText("portfolio", "text-9xl font-georama")}
       </h1>
 
       <div className="small-screen">
